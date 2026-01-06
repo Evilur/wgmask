@@ -1,0 +1,76 @@
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - -Wall
+    - -Wpedantic
+    - -Wconversion
+    - -Wsign-conversion
+    - -Wshadow
+    - -Wnon-virtual-dtor
+    - -Wcast-align
+    - -Wunused
+    - -Wunused-parameter
+    - -Wunused-variable
+    - -Wunused-function
+    - -Wswitch
+    - -Wswitch-enum
+    - -Wunreachable-code
+    - -Wfloat-equal
+    - -Wdouble-promotion
+    - -Wlogical-op
+    - -Wnull-dereference
+    - -Wduplicated-branches
+    - -Wduplicated-cond
+    - -Wdeprecated
+    - -Wstrict-overflow
+    - -Wunsafe-loop-optimizations
+    - -Wstack-protector
+    - -Wcast-qual
+    - -Wnonnull
+    - -Wpointer-arith
+    - -Wbad-function-cast
+    - -Wnoexcept
+  Remove:
+    - -mno-direct-extern-access
+  Compiler: g++
+Index:
+  Background: true
+Diagnostics:
+  ClangTidy:
+    Add:
+      - '*'
+    Remove:
+      - cppcoreguidelines-avoid-c-arrays
+      - cppcoreguidelines-non-private-member-variables-in-classes
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic
+      - fuchsia-default-arguments-calls
+      - fuchsia-overloaded-operator
+      - google-readability-braces-around-statements
+      - google-readability-casting
+      - hicpp-avoid-c-arrays
+      - cppcoreguidelines-owning-memory
+      - google-runtime-int
+      - hicpp-no-array-decay
+      - hicpp-use-auto
+      - modernize-use-auto
+      - cppcoreguidelines-pro-type-cstyle-cast
+      - cppcoreguidelines-pro-bounds-array-to-pointer-decay
+      - hicpp-braces-around-statements
+      - llvmlibc-callee-namespace
+      - llvmlibc-implementation-in-namespace
+      - misc-use-anonymous-namespace
+      - altera-unroll-loops
+      - llvmlibc-inline-function-decl
+      - llvmlibc-restrict-system-libc-headers
+      - misc-non-private-member-variables-in-classes
+      - modernize-avoid-c-arrays
+      - modernize-use-trailing-return-type
+      - readability-braces-around-statements
+    MissingIncludes: Strict
+Completion:
+  AllScopes: Yes
+  ArgumentLists: Delimiters
+  HeaderInsertion: IWYU
+  CodePatterns: All
+InlayHints:
+  Enabled: false

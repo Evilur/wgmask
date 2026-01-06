@@ -1,0 +1,4 @@
+build
+.cache
+nvim.Makefile
+.qmlls.ini

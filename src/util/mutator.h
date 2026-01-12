@@ -1,11 +1,9 @@
 #pragma once
 
-#include "clear.h"
+#include "prevent/non_instantiable.h"
 
-class Mutator final {
+class Mutator final : NonInstantiable {
 public:
-    PREVENT_INSTANCE(Mutator);
-
     static void MaskPacket(char* buffer, short size);
 
     static void DemaskPacket(char* buffer, short size);

@@ -7,5 +7,5 @@
  */
 class UDPSocketIn final : public UDPSocket {
 public:
-    void Bind(sockaddr_in address) const;
+    explicit UDPSocketIn(sockaddr_in address);
 };

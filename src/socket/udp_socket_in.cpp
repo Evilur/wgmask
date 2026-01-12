@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-void UDPSocketIn::Bind(const sockaddr_in address) const {
+UDPSocketIn::UDPSocketIn(const sockaddr_in address) {
     /* Bind the address to the socket */
     if (bind(_socket_fd, (const sockaddr*)&address,
              sizeof(address)) == -1) {

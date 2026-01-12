@@ -75,8 +75,7 @@ static int run(const int argc, char* const* const argv,
         /* Get the local address */
         if (strcmp(argv[i], "-l") == 0 ||
             strcmp(argv[i], "--local") == 0) {
-            socket_in = new UDPSocketIn();
-            socket_in->Bind(UDPSocket::GetAddress(argv[i + 1]));
+            socket_in = new UDPSocketIn(UDPSocket::GetAddress(argv[i + 1]));
         }
         else if (strcmp(argv[i], "-r") == 0 ||
             strcmp(argv[i], "--remote") == 0) {

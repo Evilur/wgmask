@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <exception>
 
 #define LOG_LEVEL 0
 

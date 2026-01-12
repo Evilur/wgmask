@@ -1,6 +1,8 @@
 #include "util/logger.h"
+#include "socket/udp_socket.h"
+#include "socket/udp_socket_in.h"
+#include "socket/udp_socket_to.h"
 #include "util/mutator.h"
-#include "util/socket.h"
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -26,14 +28,14 @@ int main(int argc, char** argv) {
         if (strcmp(argv[i], "-s") == 0 ||
             strcmp(argv[i], "--server") == 0) {
             INFO_LOG("Run application as client");
-            return run(argc, argv, Masker::MaskPacket);
+            return run(argc, argv, Mutator::MaskPacket);
         }
 
         /* Find the client flag */
         if (strcmp(argv[i], "-c") == 0 ||
             strcmp(argv[i], "--client") == 0) {
             INFO_LOG("Run application as server");
-            return run(argc, argv, Masker::DemaskPacket);
+            return run(argc, argv, Mutator::DemaskPacket);
         }
     }
 
@@ -67,29 +69,30 @@ static int print_help() {
 static int run(const int argc, char* const* const argv,
                void (*mutant_package) (char* const, const short)) {
     /* Get the addresses */
-    Socket* local = nullptr;
-    Socket* remote = nullptr;
+    UDPSocketIn* socket_in = nullptr;
+    UDPSocketTo* socket_to = nullptr;
     for (int i = 0; i < argc; i++)
         /* Get the local address */
         if (strcmp(argv[i], "-l") == 0 ||
             strcmp(argv[i], "--local") == 0) {
-            local = new Socket();
-            local->Bind(argv[i + 1]);
+            socket_in = new UDPSocketIn();
+            socket_in->Bind(UDPSocket::GetAddress(argv[i + 1]));
         }
         else if (strcmp(argv[i], "-r") == 0 ||
             strcmp(argv[i], "--remote") == 0) {
-            remote = new Socket();
+            socket_to = new UDPSocketTo(UDPSocket::GetAddress(argv[i + 1]));
         }
 
     /* Have we got all necessary addresses? */
-    if ((local == nullptr) || (remote == nullptr)) {
+    if (socket_in == nullptr || socket_to == nullptr) {
         ERROR_LOG("Not all necessary addresses have been passed");
         return -1;
     }
 
     /* Wait for the UDP packages */
-    char buffer[Socket::MTU];
+    char buffer[UDPSocketIn::MTU];
     for (;;) {
+
     }
     return 0;
 }

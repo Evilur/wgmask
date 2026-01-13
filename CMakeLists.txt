@@ -8,7 +8,7 @@ IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
     SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 ELSE ()
-    SET(CMAKE_CXX_FLAGS "-g0 -O2")
+    SET(CMAKE_CXX_FLAGS "-g0 -O2 -static")
 ENDIF ()
 
 # Search header files in the 'src' directory

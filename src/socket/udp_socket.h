@@ -7,9 +7,7 @@
  * @author Evilur the.evilur@gmail.com
  */
 class UDPSocket {
-protected:
-    int _socket_fd = -1;
-
+public:
     UDPSocket();
 
     ~UDPSocket() noexcept;
@@ -21,6 +19,19 @@ protected:
     UDPSocket(UDPSocket&& socket) noexcept = default;
 
     UDPSocket& operator=(UDPSocket&& socket) noexcept = default;
+
+    void Bind(const sockaddr_in& address) const;
+
+    long Recieve(char* buffer, sockaddr_in* from) const noexcept;
+
+    void Send(const char* buffer, long buffer_size,
+              const sockaddr_in& address) const noexcept;
+
+    void SetOption(int optname, const void* optval,
+                   socklen_t optlen) const noexcept;
+
+private:
+    const int _socket_fd = -1;
 
 public:
     static constexpr int MTU = 1420;

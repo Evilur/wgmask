@@ -19,6 +19,38 @@ UDPSocket::UDPSocket() : _socket_fd(socket(AF_INET, SOCK_DGRAM, 0)) {
 
 UDPSocket::~UDPSocket() noexcept { if (_socket_fd != -1 ) close(_socket_fd); }
 
+void UDPSocket::Bind(const sockaddr_in& address) const {
+    /* Bind the address to the socket */
+    if (bind(_socket_fd, (const sockaddr*)&address, sizeof(address)) == -1) {
+        ERROR_LOG("Can't bind the address");
+        close(_socket_fd);
+        throw std::exception();
+    }
+
+    /* Print the listen address */
+    INFO_LOG("Listen on the %s:%hu",
+             inet_ntoa(address.sin_addr),
+             ntohs(address.sin_port));
+}
+
+long UDPSocket::Recieve(char* buffer, sockaddr_in* from)
+const noexcept {
+    unsigned int from_len = sizeof(sockaddr_in);
+    return recvfrom(_socket_fd, buffer, MTU, 0,
+                    (sockaddr*)from, &from_len);
+}
+
+void UDPSocket::Send(const char* const buffer, const long buffer_size,
+                     const sockaddr_in& address) const noexcept {
+    sendto(_socket_fd, buffer, (unsigned long)buffer_size, 0,
+           (const sockaddr*)&address, sizeof(sockaddr_in));
+}
+
+void UDPSocket::SetOption(const int optname, const void* const optval,
+                          const socklen_t optlen) const noexcept {
+    setsockopt(_socket_fd, SOL_SOCKET, optname, optval, optlen);
+}
+
 sockaddr_in UDPSocket::GetAddress(char* const str) {
     /* Store the result */
     sockaddr_in result { AF_INET };

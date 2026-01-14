@@ -1,17 +1,29 @@
 #pragma once
 
-#include "prevent/non_instantiable.h"
+#include "util/class.h"
 
-class Mutator final : NonInstantiable {
+#include <cstring>
+
+class Mutator final {
 public:
-    static void MaskPacket(char* buffer, short size);
+    PREVENT_INSTANTIATION(Mutator)
 
-    static void DemaskPacket(char* buffer, short size);
+    static long MaskPacket(char* buffer, short size);
+
+    static long DemaskPacket(char* buffer, short size);
 
 private:
-    constexpr static const char* const _mask =
-    "JFIF\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0TWO FAT COCKS";
+    constexpr static const char* const MASK =
+    "VLADIMIR PUTIN MOLODEC"
+    "POLITIC LEADER I BOYEC";
+    const static inline unsigned long MASK_SIZE = strlen(MASK);
+
+    constexpr static int JUNK_BYTES = 48;
+
+    enum PackageType : char {
+        HANDSHAKE_INITATION = 1,
+        HANDSHAKE_RESPONSE = 2,
+        COOKIE_REPLY = 3,
+        TRANSPORT_DATA = 4
+    };
 };

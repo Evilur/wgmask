@@ -22,7 +22,7 @@ public:
 
     void Bind(const sockaddr_in& address) const;
 
-    long Recieve(char* buffer, sockaddr_in* from) const noexcept;
+    long Receive(char* buffer, sockaddr_in* from) const noexcept;
 
     void Send(const char* buffer, long buffer_size,
               const sockaddr_in& address) const noexcept;

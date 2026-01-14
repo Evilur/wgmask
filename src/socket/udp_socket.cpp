@@ -33,7 +33,7 @@ void UDPSocket::Bind(const sockaddr_in& address) const {
              ntohs(address.sin_port));
 }
 
-long UDPSocket::Recieve(char* buffer, sockaddr_in* from)
+long UDPSocket::Receive(char* buffer, sockaddr_in* from)
 const noexcept {
     unsigned int from_len = sizeof(sockaddr_in);
     return recvfrom(_socket_fd, buffer, MTU, 0,

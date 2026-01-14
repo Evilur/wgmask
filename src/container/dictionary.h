@@ -31,7 +31,7 @@ public:
      * @param element Element to put into the map
      * @throw std::runtime_error If there is already an element with such a key
      */
-    void Put(K key, T element);
+    void Put(const K& key, T element);
 
     /**
      * Get the element from the hash map by the key
@@ -39,7 +39,7 @@ public:
      * @throw std::runtime_error If there is no an element with such a key
      * @return Element with such a key, nullptr if there is no such element
      */
-    T& Get(K key);
+    T& Get(const K& key);
 
     /**
      * Get the element from the hash map by the key
@@ -47,7 +47,14 @@ public:
      * @throw std::runtime_error If there is no an element with such a key
      * @return Element with such a key, nullptr if there is no such element
      */
-    const T& Get(K key) const;
+    const T& Get(const K& key) const;
+
+    /**
+     * Check the existence of the element in the hash map
+     * @param key The key to check the element by
+     * @return true if the element exists, false otherwise
+     */
+    bool Has(const K& key) const noexcept;
 
     /**
      * Iterator to go through the hash map
@@ -123,7 +130,7 @@ private:
      * Compare two keys
      * @return true if the keys are equal, otherwise - false
      */
-    static bool Equal(K key1, K key2) noexcept;
+    static bool Equal(const K& key1, const K& key2) noexcept;
 };
 
 #include "dictionary_imp.h"

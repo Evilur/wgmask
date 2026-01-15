@@ -1,5 +1,8 @@
 #pragma once
 
+#include "util/class.h"
+
+#include <arpa/inet.h>
 #include <netinet/in.h>
 
 /**
@@ -8,33 +11,41 @@
  */
 class UDPSocket {
 public:
+    PREVENT_COPY_ALLOW_MOVE(UDPSocket)
+
     UDPSocket();
 
     ~UDPSocket() noexcept;
 
-    UDPSocket(const UDPSocket& socket) noexcept = default;
-
-    UDPSocket& operator=(const UDPSocket& socket) noexcept = default;
-
-    UDPSocket(UDPSocket&& socket) noexcept = default;
-
-    UDPSocket& operator=(UDPSocket&& socket) noexcept = default;
-
     void Bind(const sockaddr_in& address) const;
 
+    void Connect(const sockaddr_in& address) const;
+
     long Receive(char* buffer, sockaddr_in* from) const noexcept;
+
+    long Receive(char* buffer) const noexcept;
 
     void Send(const char* buffer, long buffer_size,
               const sockaddr_in& address) const noexcept;
 
+    void Send(const char* buffer, long buffer_size) const noexcept;
+
     void SetOption(int optname, const void* optval,
                    socklen_t optlen) const noexcept;
 
+    void Close() noexcept;
+
 private:
-    const int _socket_fd = -1;
+    int _socket_fd = -1;
 
 public:
-    static constexpr int MTU = 1420;
+    static constexpr int MTU = 4096;
+
+    static inline const sockaddr_in EPHEMERAL_ADDRESS = {
+        .sin_family = AF_INET,
+        .sin_port = 0,
+        .sin_addr = inet_addr("0.0.0.0")
+    };
 
     static sockaddr_in GetAddress(char* str);
 };

@@ -95,117 +95,68 @@ static int run(const int argc, char* const* const argv,
         return -1;
     }
 
-    /* Dictionary to store the client_address:server_socket+timestamp pairs */
-    struct Node {
-      UDPSocket* server_socket = nullptr;
-      std::time_t timestamp = 0;
-    };
-    Dictionary<sockaddr_in, Node> socket_pairs(8);
-
     /* Wait for the UDP packages */
     for (;;) {
         /* Read the request from the client */
-        char* request_buffer = new char[UDPSocket::MTU];
+        char request_buffer[UDPSocket::MTU];
         sockaddr_in client_address { AF_INET };
         long request_size = client_socket->Receive(request_buffer,
                                                    &client_address);
 
         /* If there is an error while receiving data */
         if (request_size == -1) {
-            WARN_LOG("Error while receiving the request from %s:%hu",
-                     inet_ntoa(client_address.sin_addr),
-                     ntohs(client_address.sin_port));
+            WARN_LOG("Error while receiving the request");
             continue;
         }
-
-        TRACE_LOG("Get the request from %s:%hu",
-                  inet_ntoa(client_address.sin_addr),
-                  ntohs(client_address.sin_port));
 
         /* Mutate the package */
         request_size = mutate1(request_buffer, (short)request_size);
 
+        /* Dictionary to store the client_address:server_socket pairs */
+        static Dictionary<sockaddr_in, UDPSocket*> sockets(8);
+
+        /* Try to get the server socket */
+        UDPSocket* server_socket = nullptr;
+        bool server_thread_exists = false;
+        try {
+            server_socket = sockets.Get(client_address);
+            server_thread_exists = true;
+        } catch (const std::exception&) {
+            server_socket = new UDPSocket();
+            server_socket->Bind(UDPSocket::EPHEMERAL_ADDRESS);
+            server_socket->Connect(remote_address);
+            sockets.Put(client_address, server_socket);
+        }
+
+        /* Send the data to the server */
+        TRACE_LOG("Proxy the request to the server");
+        server_socket->Send(request_buffer, request_size);
+
+        /* If we already has the server thread, continue the loop */
+        if (server_thread_exists) continue;
+
         /* Send the data to the server
          * and send the response to the client (async) */
-        std::thread([request_buffer, request_size,
-                     &remote_address, client_address, client_socket,
-                     &socket_pairs, mutate2] {
-            /* Get the server socket or create a new one */
-            UDPSocket* server_socket = nullptr;
-            try {
-                /* Try to get the socket pair from the dictionary */
-                Node& socket_pair = socket_pairs.Get(client_address);
-
-                /* Check the timestamp */
-                std::time_t current_time = std::time(nullptr);
-                if (current_time - socket_pair.timestamp > (long)(60 * 3)) {
-                    delete socket_pair.server_socket;
-                    socket_pair.server_socket = new UDPSocket();
-                }
-
-                /* Update the timestamp */
-                socket_pair.timestamp = current_time;
-
-                /* Get the server socket */
-                server_socket = socket_pair.server_socket;
-            } catch (const std::exception&) {
-                /* If there is no such a pair in the dictionary,
-                 * create a new one */
-                server_socket = new UDPSocket();
-                Node socket_pair {
-                    .server_socket = server_socket,
-                    .timestamp = std::time(nullptr)
-                };
-
-                /* Put the new pair to the dictionary */
-                socket_pairs.Put(client_address, socket_pair);
-            }
-
-            /* Send the data to the server */
-            server_socket->Send(request_buffer, request_size, remote_address);
-            TRACE_LOG("Proxy the request to the %s:%hu",
-                      inet_ntoa(remote_address.sin_addr),
-                      ntohs(remote_address.sin_port));
-            delete[] request_buffer;
-
-            /* Wait for all response packages */
+        std::thread([client_socket, server_socket, client_address, mutate2] {
             for (;;) {
-                /* We have 5 seconds to get the response */
-                timeval tval { .tv_sec = 5, .tv_usec = 0 };
-                server_socket->SetOption(SO_RCVTIMEO, &tval, sizeof(timeval));
-
-                /* Try to get a reponse (a few seconds) */
+                /* Try to get a reponse */
                 char response_buffer[UDPSocket::MTU];
-                sockaddr_in server_address { AF_INET };
                 long response_size =
-                    server_socket->Receive(response_buffer, &server_address);
+                    server_socket->Receive(response_buffer);
 
                 /* If there is an error */
                 if (response_size == -1) {
-                    /* If the there is timeout error */
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-
-                    /* If there is another error */
-                    WARN_LOG("Error while receiving the request from %s:%hu",
-                             inet_ntoa(server_address.sin_addr),
-                             ntohs(server_address.sin_port));
+                    WARN_LOG("Error while receiving the response");
                     continue;
                 }
-
-                /* If we've gotten the response */
-                TRACE_LOG("Recieve the response from the %s:%hu",
-                          inet_ntoa(server_address.sin_addr),
-                          ntohs(server_address.sin_port));
 
                 /* Mutate the package */
                 response_size = mutate2(response_buffer, (short)response_size);
 
                 /* If we get the response, send it to the client */
+                TRACE_LOG("Proxy to response from the server");
                 client_socket->Send(response_buffer, response_size,
                                     client_address);
-                TRACE_LOG("Proxy the response to the %s:%hu",
-                          inet_ntoa(client_address.sin_addr),
-                          ntohs(client_address.sin_port));
             }
         }).detach();
     }

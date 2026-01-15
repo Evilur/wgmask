@@ -1,5 +1,6 @@
 #pragma once
 #include <cstring>
+#include <netinet/in.h>
 #include <type_traits>
 
 class Hash final {
@@ -14,12 +15,21 @@ private:
 
 template <>
 inline unsigned long Hash::Get(const char* const& element) noexcept {
-    return Calculate((const unsigned char*)(void*)element, strlen(element) + 1);
+    return Calculate((const unsigned char*)(void*)element,
+                     strlen(element) + 1);
 }
 
 template <>
 inline unsigned long Hash::Get(char* const& element) noexcept {
     return Get((const char*)element);
+}
+
+template <>
+inline unsigned long Hash::Get(const sockaddr_in& element) noexcept {
+    return Calculate((const unsigned char*)(void*)&element.sin_addr,
+                     sizeof(element.sin_addr)) *
+           Calculate((const unsigned char*)(void*)&element.sin_port,
+                     sizeof(element.sin_port));
 }
 
 template <typename T>

@@ -39,7 +39,7 @@ private:
     int _socket_fd = -1;
 
 public:
-    static constexpr int MTU = 4096;
+    static constexpr int MTU = 1600;
 
     static inline const sockaddr_in EPHEMERAL_ADDRESS = {
         .sin_family = AF_INET,

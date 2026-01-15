@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <exception>
 
-#define LOG_LEVEL 0
+#define LOG_LEVEL 1
 
 #if LOG_LEVEL == 0
 #define TRACE_LOG(...) Logger::Log(stdout, Logger::TRACE, __VA_ARGS__)

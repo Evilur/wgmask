@@ -1,8 +1,8 @@
 #pragma once
 
 #include "dictionary.h"
+#include "socket/udp_socket.h"
 #include "util/hash.h"
-#include <netinet/in.h>
 
 template <typename K, typename T>
 Dictionary<K, T>::Dictionary(const unsigned short capacity) noexcept :

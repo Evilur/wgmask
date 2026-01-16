@@ -23,7 +23,7 @@ long Mutator::MaskPacket(char* const buffer, const short size) {
         for (short i = 92 - 16; i < 92; ++i) buffer[i] ^= MASK[i % MASK_SIZE];
 
     /* Return the current buffer size with junk bytes from the memory */
-    return size + JUNK_BYTES;
+    return size + (type < COOKIE_REPLY ? JUNK_BYTES : 0);
 }
 
 long Mutator::DemaskPacket(char* const buffer, const short size) {
@@ -47,5 +47,6 @@ long Mutator::DemaskPacket(char* const buffer, const short size) {
         #pragma unroll
         for (short i = 92 - 16; i < 92; ++i) buffer[i] ^= MASK[i % MASK_SIZE];
 
-    return size - JUNK_BYTES;
+    /* Return the current buffer size with junk bytes from the memory */
+    return size + (type < COOKIE_REPLY ? JUNK_BYTES : 0);
 }

@@ -19,3 +19,8 @@ FILE(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Build all *.cpp files
 ADD_EXECUTABLE(wgmask ${SOURCES})
+
+# Link windows libraries
+IF(MINGW)
+    TARGET_LINK_LIBRARIES(wgmask ws2_32)
+ENDIF()

@@ -2,8 +2,17 @@
 
 #include "util/class.h"
 
+#ifdef _WIN64
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#undef ERROR
+#undef INFO
+#undef DEBUG
+#undef WARN
+#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
 
 /**
  * Basic class for UDP sockets
@@ -44,7 +53,7 @@ public:
     static inline const sockaddr_in EPHEMERAL_ADDRESS = {
         .sin_family = AF_INET,
         .sin_port = 0,
-        .sin_addr = inet_addr("0.0.0.0")
+        .sin_addr = INADDR_ANY
     };
 
     static sockaddr_in GetAddress(char* str);

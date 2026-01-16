@@ -1,17 +1,10 @@
 #include "container/dictionary.h"
-#include "util/logger.h"
 #include "socket/udp_socket.h"
+#include "util/logger.h"
 #include "util/mutator.h"
 
-#include <cstddef>
-#include <fstream>
-#include <format>
-
-#include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
 
@@ -32,14 +25,14 @@ int main(int argc, char** argv) {
         /* Find the server flag */
         if (strcmp(argv[i], "-s") == 0 ||
             strcmp(argv[i], "--server") == 0) {
-            INFO_LOG("Run application as client");
+            INFO_LOG("Run application as server");
             return run(argc, argv, Mutator::DemaskPacket, Mutator::MaskPacket);
         }
 
         /* Find the client flag */
         if (strcmp(argv[i], "-c") == 0 ||
             strcmp(argv[i], "--client") == 0) {
-            INFO_LOG("Run application as server");
+            INFO_LOG("Run application as client");
             return run(argc, argv, Mutator::MaskPacket, Mutator::DemaskPacket);
         }
     }

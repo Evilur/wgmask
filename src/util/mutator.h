@@ -18,7 +18,7 @@ private:
     "POLITIC LEADER I BOYEC";
     const static inline unsigned long MASK_SIZE = strlen(MASK);
 
-    static constexpr int JUNK_BYTES = 8;
+    static constexpr int JUNK_BYTES = 72;
 
     enum PackageType : char {
         HANDSHAKE_INITATION = 1,

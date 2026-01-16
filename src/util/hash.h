@@ -1,6 +1,8 @@
 #pragma once
+
+#include "socket/udp_socket.h"
+
 #include <cstring>
-#include <netinet/in.h>
 #include <type_traits>
 
 class Hash final {

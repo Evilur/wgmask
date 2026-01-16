@@ -1,15 +1,23 @@
 #include "udp_socket.h"
 #include "util/logger.h"
 
-#include <arpa/inet.h>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
-UDPSocket::UDPSocket() : _socket_fd(socket(AF_INET, SOCK_DGRAM, 0)) {
+UDPSocket::UDPSocket() {
+    #ifdef _WIN64
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
+        ERROR_LOG("Can't startup the WSA");
+        throw std::exception();
+    }
+    #endif
+
+    /* Create a socket */
+    _socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
     /* Check the socket */
     if (_socket_fd == -1) {
         ERROR_LOG("Can't create a socket");
@@ -17,7 +25,15 @@ UDPSocket::UDPSocket() : _socket_fd(socket(AF_INET, SOCK_DGRAM, 0)) {
     }
 }
 
-UDPSocket::~UDPSocket() noexcept { if (_socket_fd != -1 ) close(_socket_fd); }
+UDPSocket::~UDPSocket() noexcept {
+    if (_socket_fd == -1) return;
+    #ifdef _WIN64
+    closesocket(_socket_fd);
+    WSACleanup();
+    #else
+    close(_socket_fd);
+    #endif
+}
 
 void UDPSocket::Bind(const sockaddr_in& address) const {
     /* Bind the address to the socket */
@@ -28,9 +44,11 @@ void UDPSocket::Bind(const sockaddr_in& address) const {
     }
 
     /* Set options */
-    const int reuse = 1;
+    constexpr int reuse = 1;
     SetOption(SO_REUSEADDR, &reuse, sizeof(reuse));
+    #ifndef _WIN64
     SetOption(SO_REUSEPORT, &reuse, sizeof(reuse));
+    #endif
 
     /* Print the listen address */
     INFO_LOG("Listen on the %s:%hu",
@@ -148,8 +166,14 @@ const noexcept {
 
 void UDPSocket::SetOption(const int optname, const void* const optval,
                           const socklen_t optlen) const noexcept {
+    #ifdef _WIN64
+    if (setsockopt(_socket_fd, SOL_SOCKET,
+                   optname, (const char*)optval, optlen) == -1)
+        WARN_LOG("Can't set socket option");
+    #else
     if (setsockopt(_socket_fd, SOL_SOCKET, optname, optval, optlen) == -1)
         WARN_LOG("Can't set socket option");
+    #endif
 }
 
 void UDPSocket::Close() noexcept {
@@ -174,7 +198,7 @@ sockaddr_in UDPSocket::GetAddress(char* const str) {
     const char* const port_ptr = ip_end + 1;
 
     /* Set the ip */
-    if (inet_aton(ip_ptr, &result.sin_addr) == 0) {
+    if (inet_pton(AF_INET, ip_ptr, &result.sin_addr) == -1) {
         ERROR_LOG("Invalid ip address");
         throw std::exception();
     }

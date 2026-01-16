@@ -53,7 +53,11 @@ void UDPSocket::Bind(const sockaddr_in& address) const {
     /* Print the listen address */
 #if LOG_LEVEL <= 2
     sockaddr_in real_address;
+#if _WIN64
+    int real_address_size = sizeof(real_address);
+#else
     unsigned int real_address_size = sizeof(real_address);
+#endif
     getsockname(_socket_fd, (sockaddr*)&real_address, &real_address_size);
     INFO_LOG("Listen on the %s:%hu",
              inet_ntoa(real_address.sin_addr),
@@ -100,7 +104,7 @@ const noexcept {
     const long result = recv(_socket_fd, buffer, MTU, 0);
 
     /* Print the log */
-#if LOG_LEVEL == 1
+#if LOG_LEVEL == 0
     if (result != -1) {
         sockaddr_in from;
         socklen_t from_len = sizeof(from);

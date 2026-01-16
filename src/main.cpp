@@ -110,48 +110,64 @@ static int run(const int argc, char* const* const argv,
 
         /* Try to get the server socket */
         UDPSocket* server_socket = nullptr;
-        bool server_thread_exists = false;
         try {
             server_socket = sockets.Get(client_address);
-            server_thread_exists = true;
         } catch (const std::exception&) {
+            /* If there is no a server socket yet for that client */
             server_socket = new UDPSocket();
-            server_socket->Bind(UDPSocket::EPHEMERAL_ADDRESS);
-            server_socket->Connect(remote_address);
             sockets.Put(client_address, server_socket);
+
+            /* Connect the socket to the server */
+            server_socket->Connect(remote_address);
+
+            /* If there are no data for 3 mins,
+             * exit the thread and close the socket */
+            timeval time {
+                .tv_sec = 60 * 3,
+                .tv_usec = 0
+            };
+            server_socket->SetOption(SO_RCVTIMEO, &time, sizeof(time));
+
+            /* Send the response to the client (async) */
+            std::thread([client_socket, server_socket,
+                         client_address, mutate2] {
+                for (;;) {
+                    /* Try to get a reponse */
+                    char response_buffer[UDPSocket::MTU];
+                    long response_size =
+                        server_socket->Receive(response_buffer);
+
+                    /* If there is an error */
+                    if (response_size == -1) {
+                        /* Delete the socket from the dictionary */
+                        delete server_socket;
+                        sockets.Delete(client_address);
+
+                        /* Print the log */
+                        INFO_LOG("Delete the %s:%hu client",
+                                 inet_ntoa(client_address.sin_addr),
+                                 ntohs(client_address.sin_port));
+
+
+                        /* Exit the loop (and thread) */
+                        break;
+                    }
+
+                    /* Mutate the package */
+                    response_size = mutate2(response_buffer,
+                                            (short)response_size);
+
+                    /* If we get the response, send it to the client */
+                    TRACE_LOG("Proxy to response from the server");
+                    client_socket->Send(response_buffer, response_size,
+                                        client_address);
+                }
+            }).detach();
         }
 
         /* Send the data to the server */
         TRACE_LOG("Proxy the request to the server");
         server_socket->Send(request_buffer, request_size);
-
-        /* If we already has the server thread, continue the loop */
-        if (server_thread_exists) continue;
-
-        /* Send the data to the server
-         * and send the response to the client (async) */
-        std::thread([client_socket, server_socket, client_address, mutate2] {
-            for (;;) {
-                /* Try to get a reponse */
-                char response_buffer[UDPSocket::MTU];
-                long response_size =
-                    server_socket->Receive(response_buffer);
-
-                /* If there is an error */
-                if (response_size == -1) {
-                    WARN_LOG("Error while receiving the response");
-                    continue;
-                }
-
-                /* Mutate the package */
-                response_size = mutate2(response_buffer, (short)response_size);
-
-                /* If we get the response, send it to the client */
-                TRACE_LOG("Proxy to response from the server");
-                client_socket->Send(response_buffer, response_size,
-                                    client_address);
-            }
-        }).detach();
     }
     return 0;
 }

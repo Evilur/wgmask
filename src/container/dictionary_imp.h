@@ -71,6 +71,30 @@ bool Dictionary<K, T>::Has(const K& key) const noexcept {
 }
 
 template <typename K, typename T>
+void Dictionary<K, T>::Delete(const K& key) {
+    /* Calculate the key hash */
+    const unsigned short hash = Hash::Get(key) % _capacity;
+
+    /* Try to get the node from the linked list */
+    short index = 0;
+    bool has_element = false;
+    for (const Node& node : _buckets[hash]) {
+        if (Equal(node.key, key)) {
+            has_element = true;
+            break;
+        }
+        ++index;
+    }
+
+    /* Throw an error if there is no an element with such a key */
+    if (!has_element)
+        throw std::runtime_error("Dictionary::Delete() no such an element");
+
+    /* If all is OK delete the element with such an index from the bucket */
+    _buckets[hash].Remove(index);
+}
+
+template <typename K, typename T>
 Dictionary<K, T>::Iterator Dictionary<K, T>::begin() const noexcept {
     /* Iterate over all buckets */
     for (unsigned short i = 0; i < _capacity; ++i)

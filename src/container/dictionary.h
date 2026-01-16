@@ -57,6 +57,12 @@ public:
     bool Has(const K& key) const noexcept;
 
     /**
+     * Delete the element from the hash map
+     * @param key The key to delete the element by
+     */
+    void Delete(const K& key);
+
+    /**
      * Iterator to go through the hash map
      */
     class Iterator {

@@ -56,6 +56,8 @@ Diagnostics:
       - google-runtime-int
       - hicpp-no-array-decay
       - hicpp-use-auto
+      - readability-identifier-length
+      - fuchsia-default-arguments-declarations
       - cppcoreguidelines-avoid-const-or-ref-data-members
       - modernize-use-auto
       - bugprone-easily-swappable-parameters

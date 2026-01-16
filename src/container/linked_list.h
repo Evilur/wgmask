@@ -36,9 +36,10 @@ public:
 
     bool TryPopTail() noexcept;
 
-    void Remove(unsigned int index, unsigned int number);
+    void Remove(unsigned int index, unsigned int number = 1);
 
-    unsigned int TryRemove(unsigned int index, unsigned int number) noexcept;
+    unsigned int TryRemove(unsigned int index, unsigned int number = 1)
+    noexcept;
 
     T& Get(unsigned int index);
 

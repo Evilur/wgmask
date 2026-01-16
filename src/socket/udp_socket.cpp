@@ -51,14 +51,14 @@ void UDPSocket::Bind(const sockaddr_in& address) const {
     #endif
 
     /* Print the listen address */
-    #if LOG_LEVEL <= 1
+#if LOG_LEVEL <= 2
     sockaddr_in real_address;
     unsigned int real_address_size = sizeof(real_address);
     getsockname(_socket_fd, (sockaddr*)&real_address, &real_address_size);
     INFO_LOG("Listen on the %s:%hu",
              inet_ntoa(real_address.sin_addr),
              ntohs(real_address.sin_port));
-    #endif
+#endif
 }
 
 void UDPSocket::Connect(const sockaddr_in& address) const {
@@ -83,17 +83,13 @@ const noexcept {
     const long result = recvfrom(_socket_fd, buffer, MTU, 0,
                            (sockaddr*)from, &from_len);
 
-    /* If there is an error */
-    if (result == -1) {
-        WARN_LOG("Error while receiving the data");
-        return -1;
-    }
-
     /* Print the log */
-    TRACE_LOG("Get %lu bytes from %s:%hu",
-              result,
-              inet_ntoa(from->sin_addr),
-              ntohs(from->sin_port));
+    if (result != -1) {
+        TRACE_LOG("Get %lu bytes from %s:%hu",
+                  result,
+                  inet_ntoa(from->sin_addr),
+                  ntohs(from->sin_port));
+    }
 
     /* Return the result */
     return result;
@@ -103,22 +99,18 @@ long UDPSocket::Receive(char* buffer)
 const noexcept {
     const long result = recv(_socket_fd, buffer, MTU, 0);
 
-    /* If there is an error */
-    if (result == -1) {
-        WARN_LOG("Error while receiving the data");
-        return -1;
-    }
-
     /* Print the log */
-    #if LOG_LEVEL == 0
-    sockaddr_in from;
-    socklen_t from_len = sizeof(from);
-    getpeername(_socket_fd, (sockaddr*)&from, &from_len);
-    TRACE_LOG("Get %lu bytes from %s:%hu",
-              result,
-              inet_ntoa(from.sin_addr),
-              ntohs(from.sin_port));
-    #endif
+#if LOG_LEVEL == 1
+    if (result != -1) {
+        sockaddr_in from;
+        socklen_t from_len = sizeof(from);
+        getpeername(_socket_fd, (sockaddr*)&from, &from_len);
+        TRACE_LOG("Get %lu bytes from %s:%hu",
+                  result,
+                  inet_ntoa(from.sin_addr),
+                  ntohs(from.sin_port));
+    }
+#endif
 
     /* Return the result */
     return result;
@@ -132,17 +124,13 @@ void UDPSocket::Send(const char* const buffer, const long buffer_size,
                                 (const sockaddr*)&address,
                                 sizeof(sockaddr_in));
 
-    /* If there is an error */
-    if (result == -1) {
-        WARN_LOG("Error while sending the data");
-        return;
-    }
-
     /* Print the log */
-    TRACE_LOG("Send %lu bytes to %s:%hu",
-              result,
-              inet_ntoa(address.sin_addr),
-              ntohs(address.sin_port));
+    if (result != -1) {
+        TRACE_LOG("Send %lu bytes to %s:%hu",
+                  result,
+                  inet_ntoa(address.sin_addr),
+                  ntohs(address.sin_port));
+    }
 }
 
 void UDPSocket::Send(const char* const buffer, const long buffer_size)
@@ -151,34 +139,30 @@ const noexcept {
     const long result  = send(_socket_fd, buffer,
                               (unsigned long)buffer_size, 0);
 
-    /* If there is an error */
-    if (result == -1) {
-        WARN_LOG("Error while sending the data");
-        return;
-    }
 
     /* Print the log */
-    #if LOG_LEVEL == 0
-    sockaddr_in address;
-    socklen_t address_len = sizeof(address);
-    getpeername(_socket_fd, (sockaddr*)&address, &address_len);
-    TRACE_LOG("Send %lu bytes to %s:%hu",
-              result,
-              inet_ntoa(address.sin_addr),
-              ntohs(address.sin_port));
-    #endif
+#if LOG_LEVEL == 0
+    if (result != -1) {
+        sockaddr_in address;
+        socklen_t address_len = sizeof(address);
+        getpeername(_socket_fd, (sockaddr*)&address, &address_len);
+        TRACE_LOG("Send %lu bytes to %s:%hu",
+                  result,
+                  inet_ntoa(address.sin_addr),
+                  ntohs(address.sin_port));
+    }
+#endif
 }
 
 void UDPSocket::SetOption(const int optname, const void* const optval,
                           const socklen_t optlen) const noexcept {
-    #ifdef _WIN64
+#ifdef _WIN64
     if (setsockopt(_socket_fd, SOL_SOCKET,
                    optname, (const char*)optval, optlen) == -1)
-        WARN_LOG("Can't set socket option");
-    #else
+#else
     if (setsockopt(_socket_fd, SOL_SOCKET, optname, optval, optlen) == -1)
+#endif
         WARN_LOG("Can't set socket option");
-    #endif
 }
 
 void UDPSocket::Close() noexcept {

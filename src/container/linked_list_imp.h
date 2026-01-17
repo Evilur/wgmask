@@ -136,7 +136,7 @@ void LinkedList<T>::Remove(unsigned int index, unsigned int number) {
 
 template <typename T>
 unsigned int LinkedList<T>::TryRemove(unsigned int index,
-    unsigned int number) noexcept {
+                                      unsigned int number) noexcept {
     /* If we are deleting first elements */
     if (index == 0) return TryPop(number);
 
@@ -166,6 +166,48 @@ unsigned int LinkedList<T>::TryRemove(unsigned int index,
 
     /* Return the result */
     return result;
+}
+
+template <typename T>
+void LinkedList<T>::Remove(const T& element,
+                           bool (*const equal) (const T& e1, const T& e2)) {
+    /* Check the equal function */
+    if (equal == nullptr)
+        throw std::runtime_error(
+            "LinkedList::Remove(const T&, bool (*)(const T&, const T&)): "
+            "equal function == nullptr"
+        );
+
+    /* If the list is empty */
+    if (_head == nullptr)
+        throw std::runtime_error(
+            "LinkedList::Remove(const T&, bool (*)(const T&, const T&)): "
+            "no such an element"
+        );
+
+    /* If our element is a head */
+    if (equal(_head->value, element)) { Pop(); return; }
+
+    /* Get the element before the removable */
+    Node* before_removable = _head;
+    while (before_removable->next != nullptr) {
+        if (equal(before_removable->next->value, element))
+            break;
+        before_removable = before_removable->next;
+    }
+
+    /* If there is no such an element */
+    if (before_removable->next == nullptr)
+        throw std::runtime_error(
+            "LinkedList::Remove(const T&, bool (*)(const T&, const T&)): "
+            "no such an element"
+        );
+
+    /* Cut the node */
+    CutNode(before_removable->next);
+
+    /* If we got the last element, update the tail */
+    if (before_removable->next == nullptr) _tail = before_removable;
 }
 
 template <typename T>

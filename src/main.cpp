@@ -8,11 +8,32 @@
 #include <thread>
 #include <unistd.h>
 
+/* Dictionary to store the client_address:server_socket pairs */
+static Dictionary<sockaddr_in, UDPSocket*> sockets(8);
+static std::mutex sockets_mutex;
+
 static int print_help();
 
-static int run(int argc, char* const* argv,
-               long (*mutate1) (char* const, const short size),
-               long (*mutate2) (char* const, const short size));
+static int client_loop(int argc, char* const* argv,
+                       long (*mutate1) (char* const, const short),
+                       long (*mutate2) (char* const, const short));
+
+static void handle_client(const sockaddr_in& client_address,
+                          const sockaddr_in& remote_address,
+                          UDPSocket* client_socket,
+                          char* request_buffer, long request_size,
+                          long (*mutate1) (char* const, const short),
+                          long (*mutate2) (char* const, const short));
+
+static void server_loop(const sockaddr_in& client_address,
+                       UDPSocket* client_socket,
+                       UDPSocket* server_socket,
+                       long (*mutate2) (char* const, const short));
+
+static void handle_server(const sockaddr_in& client_address,
+                          UDPSocket* client_socket,
+                          char* response_buffer, long response_size,
+                          long (*mutate2) (char* const, const short));
 
 int main(int argc, char** argv) {
     /* Read basic flags */
@@ -26,14 +47,16 @@ int main(int argc, char** argv) {
         if (strcmp(argv[i], "-s") == 0 ||
             strcmp(argv[i], "--server") == 0) {
             INFO_LOG("Run application as server");
-            return run(argc, argv, Mutator::DemaskPacket, Mutator::MaskPacket);
+            return client_loop(argc, argv,
+                            Mutator::DemaskPacket, Mutator::MaskPacket);
         }
 
         /* Find the client flag */
         if (strcmp(argv[i], "-c") == 0 ||
             strcmp(argv[i], "--client") == 0) {
             INFO_LOG("Run application as client");
-            return run(argc, argv, Mutator::MaskPacket, Mutator::DemaskPacket);
+            return client_loop(argc, argv,
+                            Mutator::MaskPacket, Mutator::DemaskPacket);
         }
     }
 
@@ -64,9 +87,9 @@ static int print_help() {
     return 0;
 }
 
-static int run(const int argc, char* const* const argv,
-               long (*mutate1) (char* const, const short),
-               long (*mutate2) (char* const, const short)) {
+static int client_loop(const int argc, char* const* const argv,
+                       long (*mutate1) (char* const, const short),
+                       long (*mutate2) (char* const, const short)) {
     /* Get the addresses */
     UDPSocket* client_socket = nullptr;
     sockaddr_in remote_address { AF_INET }; remote_address.sin_port = 0;
@@ -88,11 +111,11 @@ static int run(const int argc, char* const* const argv,
         return -1;
     }
 
-    /* Wait for the UDP packages */
+    /* Run the loop and wait for the UDP packages */
     for (;;) {
         /* Read the request from the client */
-        char request_buffer[UDPSocket::MTU];
-        sockaddr_in client_address { AF_INET };
+        char* request_buffer = new char[UDPSocket::MTU];
+        sockaddr_in client_address;
         long request_size = client_socket->Receive(request_buffer,
                                                    &client_address);
 
@@ -102,72 +125,105 @@ static int run(const int argc, char* const* const argv,
             continue;
         }
 
-        /* Mutate the package */
-        request_size = mutate1(request_buffer, (short)request_size);
-
-        /* Dictionary to store the client_address:server_socket pairs */
-        static Dictionary<sockaddr_in, UDPSocket*> sockets(8);
-
-        /* Try to get the server socket */
-        UDPSocket* server_socket = nullptr;
-        try {
-            server_socket = sockets.Get(client_address);
-        } catch (const std::exception&) {
-            /* If there is no a server socket yet for that client */
-            server_socket = new UDPSocket();
-            sockets.Put(client_address, server_socket);
-
-            /* Connect the socket to the server */
-            server_socket->Connect(remote_address);
-
-            /* If there are no data for 3 mins,
-             * exit the thread and close the socket */
-            timeval time {
-                .tv_sec = 60 * 3,
-                .tv_usec = 0
-            };
-            server_socket->SetOption(SO_RCVTIMEO, &time, sizeof(time));
-
-            /* Send the response to the client (async) */
-            std::thread([client_socket, server_socket,
-                         client_address, mutate2] {
-                for (;;) {
-                    /* Try to get a reponse */
-                    char response_buffer[UDPSocket::MTU];
-                    long response_size =
-                        server_socket->Receive(response_buffer);
-
-                    /* If there is an error */
-                    if (response_size == -1) {
-                        /* Delete the socket from the dictionary */
-                        delete server_socket;
-                        sockets.Delete(client_address);
-
-                        /* Print the log */
-                        INFO_LOG("Delete the %s:%hu client",
-                                 inet_ntoa(client_address.sin_addr),
-                                 ntohs(client_address.sin_port));
-
-
-                        /* Exit the loop (and thread) */
-                        break;
-                    }
-
-                    /* Mutate the package */
-                    response_size = mutate2(response_buffer,
-                                            (short)response_size);
-
-                    /* If we get the response, send it to the client */
-                    TRACE_LOG("Proxy to response from the server");
-                    client_socket->Send(response_buffer, response_size,
-                                        client_address);
-                }
-            }).detach();
-        }
-
-        /* Send the data to the server */
-        TRACE_LOG("Proxy the request to the server");
-        server_socket->Send(request_buffer, request_size);
+        /* Handle the client (async) */
+        std::thread(handle_client, client_address, remote_address,
+                    client_socket, request_buffer, request_size,
+                    mutate1, mutate2).detach();
     }
     return 0;
+}
+
+static void handle_client(const sockaddr_in& client_address,
+                          const sockaddr_in& remote_address,
+                          UDPSocket* const client_socket,
+                          char* const request_buffer, long request_size,
+                          long (*const mutate1)
+                          (char* const, const short size),
+                          long (*const mutate2) (char* const, const short)) {
+    /* Mutate the package */
+    request_size = mutate1(request_buffer, (short)request_size);
+
+    /* Try to get the server socket */
+    UDPSocket* server_socket = nullptr;
+    sockets_mutex.lock();
+    try {
+        server_socket = sockets.Get(client_address);
+        sockets_mutex.unlock();
+    } catch (const std::exception&) {
+        /* If there is no a server socket yet for that client */
+        server_socket = new UDPSocket();
+
+        /* Bind the ephemeral address */
+        server_socket->Bind(UDPSocket::EPHEMERAL_ADDRESS);
+
+        /* Connect the socket to the server */
+        server_socket->Connect(remote_address);
+
+        /* If there are no data for 3 mins,
+             * exit the thread and close the socket */
+        timeval time {
+            .tv_sec = (time_t)(60 * 3),
+            .tv_usec = 0
+        };
+        server_socket->SetOption(SO_RCVTIMEO, &time, sizeof(time));
+
+        /* Put that socket to the dictionary */
+        sockets.Put(client_address, server_socket);
+        sockets_mutex.unlock();
+
+        /* Run the server loop to proxy the response to the client (async) */
+        std::thread(server_loop, client_address, client_socket,
+                    server_socket, mutate2).detach();
+    }
+
+    /* Send the data to the server */
+    TRACE_LOG("Proxy the request to the server");
+    server_socket->Send(request_buffer, request_size);
+    delete[] request_buffer;
+}
+
+static void server_loop(const sockaddr_in& client_address,
+                       UDPSocket* const client_socket,
+                       UDPSocket* const server_socket,
+                       long (*const mutate2) (char* const, const short)) {
+    for (;;) {
+        /* Try to get a reponse */
+        char* response_buffer = new char[UDPSocket::MTU];
+        long response_size = server_socket->Receive(response_buffer);
+
+        /* If there is an error */
+        if (response_size == -1) {
+            /* Delete the socket from the dictionary */
+            sockets_mutex.lock();
+            delete server_socket;
+            sockets.Delete(client_address);
+            sockets_mutex.unlock();
+
+            /* Print the log */
+            INFO_LOG("Delete the %s:%hu client",
+                     inet_ntoa(client_address.sin_addr),
+                     ntohs(client_address.sin_port));
+
+            /* Exit the loop (and thread) */
+            break;
+        }
+
+        /* Handle the server (async) */
+        std::thread(handle_server, client_address, client_socket,
+                    response_buffer, response_size, mutate2).detach();
+    }
+}
+
+static void handle_server(const sockaddr_in& client_address,
+                          UDPSocket* const client_socket,
+                          char* const response_buffer, long response_size,
+                          long (*const mutate2) (char* const, const short)) {
+    /* Mutate the package */
+    response_size = mutate2(response_buffer,
+                            (short)response_size);
+
+    /* If we get the response, send it to the client */
+    TRACE_LOG("Proxy to response from the server");
+    client_socket->Send(response_buffer, response_size, client_address);
+    delete[] response_buffer;
 }

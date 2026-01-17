@@ -12,7 +12,7 @@
 #undef FATAL
 #endif
 
-#define LOG_LEVEL 1
+#define LOG_LEVEL 2
 
 #if LOG_LEVEL == 0
 #define TRACE_LOG(...) Logger::Log(stdout, Logger::TRACE, __VA_ARGS__)

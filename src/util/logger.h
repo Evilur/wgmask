@@ -3,6 +3,15 @@
 #include <cstdio>
 #include <exception>
 
+#ifdef _WIN64
+#undef TRACE
+#undef DEBUG
+#undef INFO
+#undef WARN
+#undef ERROR
+#undef FATAL
+#endif
+
 #define LOG_LEVEL 1
 
 #if LOG_LEVEL == 0

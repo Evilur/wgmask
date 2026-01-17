@@ -5,10 +5,6 @@
 #ifdef _WIN64
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#undef ERROR
-#undef INFO
-#undef DEBUG
-#undef WARN
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>

@@ -1,4 +1,5 @@
 #include "container/dictionary.h"
+#include "pool/buffer_pool.h"
 #include "socket/udp_socket.h"
 #include "util/logger.h"
 #include "util/mutator.h"
@@ -11,6 +12,13 @@
 /* Dictionary to store the client_address:server_socket pairs */
 static Dictionary<sockaddr_in, UDPSocket*> sockets(8);
 static std::mutex sockets_mutex;
+
+/* Thread pools */
+
+
+/* Buffer pool */
+static BufferPool buffer_pool;
+static std::mutex buffers_mutex;
 
 static int print_help();
 
@@ -114,7 +122,9 @@ static int client_loop(const int argc, char* const* const argv,
     /* Run the loop and wait for the UDP packages */
     for (;;) {
         /* Read the request from the client */
-        char* request_buffer = new char[UDPSocket::MTU];
+        buffers_mutex.lock();
+        char* request_buffer = buffer_pool.Get();
+        buffers_mutex.unlock();
         sockaddr_in client_address;
         long request_size = client_socket->Receive(request_buffer,
                                                    &client_address);
@@ -159,6 +169,11 @@ static void handle_client(const sockaddr_in& client_address,
         /* Connect the socket to the server */
         server_socket->Connect(remote_address);
 
+        /* Print the log */
+        INFO_LOG("Save the %s:%hu client",
+                 inet_ntoa(client_address.sin_addr),
+                 ntohs(client_address.sin_port));
+
         /* If there are no data for 3 mins,
              * exit the thread and close the socket */
         timeval time {
@@ -179,7 +194,9 @@ static void handle_client(const sockaddr_in& client_address,
     /* Send the data to the server */
     TRACE_LOG("Proxy the request to the server");
     server_socket->Send(request_buffer, request_size);
-    delete[] request_buffer;
+    buffers_mutex.lock();
+    buffer_pool.Release(request_buffer);
+    buffers_mutex.unlock();
 }
 
 static void server_loop(const sockaddr_in& client_address,
@@ -188,7 +205,9 @@ static void server_loop(const sockaddr_in& client_address,
                        long (*const mutate2) (char* const, const short)) {
     for (;;) {
         /* Try to get a reponse */
-        char* response_buffer = new char[UDPSocket::MTU];
+        buffers_mutex.lock();
+        char* response_buffer = buffer_pool.Get();
+        buffers_mutex.unlock();
         long response_size = server_socket->Receive(response_buffer);
 
         /* If there is an error */
@@ -225,5 +244,7 @@ static void handle_server(const sockaddr_in& client_address,
     /* If we get the response, send it to the client */
     TRACE_LOG("Proxy to response from the server");
     client_socket->Send(response_buffer, response_size, client_address);
-    delete[] response_buffer;
+    buffers_mutex.lock();
+    buffer_pool.Release(response_buffer);
+    buffers_mutex.unlock();
 }

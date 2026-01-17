@@ -3,11 +3,6 @@
 #include "util/class.h"
 
 template <typename T>
-static bool default_equal(const T& element1, const T& element2) {
-    return element1 == element2;
-}
-
-template <typename T>
 class LinkedList {
 protected:
     struct Node;
@@ -47,7 +42,8 @@ public:
     noexcept;
 
     void Remove(const T& element,
-                bool (*equal) (const T& e1, const T& e2) = default_equal);
+                bool (*equal) (const T& e1, const T& e2) =
+                    [](const T& e1, const T& e2) { return e1 == e2; });
 
     T& Get(unsigned int index);
 

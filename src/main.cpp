@@ -17,7 +17,7 @@ static std::mutex sockets_mutex;
 
 
 /* Buffer pool */
-static BufferPool buffer_pool;
+static BufferPool buffer_pool(8);
 static std::mutex buffers_mutex;
 
 static int print_help();

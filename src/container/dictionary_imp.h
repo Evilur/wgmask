@@ -119,12 +119,12 @@ template <typename K, typename T>
 bool Dictionary<K, T>::Equal(const K& key1, const K& key2) noexcept {
     if constexpr (std::is_same_v<K, const char*>)
         return strcmp(key1, key2) == 0;
-    else if constexpr (std::is_same_v<K, sockaddr_in>)
-        return ((sockaddr_in)key1).sin_port == ((sockaddr_in)key2).sin_port &&
-               ((sockaddr_in)key1).sin_addr.s_addr ==
-               ((sockaddr_in)key2).sin_addr.s_addr;
-    else
-        return key1 == key2;
+    else if constexpr (std::is_same_v<K, sockaddr_in>) {
+        const sockaddr_in& addr1 = (sockaddr_in)key1;
+        const sockaddr_in& addr2 = (sockaddr_in)key2;
+        return addr1.sin_addr.s_addr == addr2.sin_addr.s_addr &&
+               addr1.sin_port == addr2.sin_port;
+    } else return key1 == key2;
 }
 
 template <typename K, typename T>

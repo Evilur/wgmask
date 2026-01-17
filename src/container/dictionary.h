@@ -4,7 +4,7 @@
 #include "util/class.h"
 
 /**
- * Simple minimalistic implementation of hash map
+ * A simple implementation of a hash map
  * @author Evilur <the.evilur@gmail.com>
  * @tparam K Key typename
  * @tparam T Element typename

@@ -28,10 +28,9 @@ inline unsigned long Hash::Get(char* const& element) noexcept {
 
 template <>
 inline unsigned long Hash::Get(const sockaddr_in& element) noexcept {
-    return Calculate((const unsigned char*)(void*)&element.sin_addr,
-                     sizeof(element.sin_addr)) *
-           Calculate((const unsigned char*)(void*)&element.sin_port,
-                     sizeof(element.sin_port));
+    return Calculate((const unsigned char*)(void*)&element.sin_port,
+                     sizeof(element.sin_port) +
+                     sizeof(element.sin_addr));
 }
 
 template <typename T>

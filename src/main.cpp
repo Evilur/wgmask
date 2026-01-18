@@ -12,6 +12,10 @@
 static Dictionary<sockaddr_in, UDPSocket*> sockets(32);
 static std::mutex sockets_mutex;
 
+/* Otions */
+constexpr int RCVBUF = 16 * 1024 * 1024;
+constexpr int SNDBUF = 16 * 1024 * 1024;
+
 static int print_help();
 
 static int client_loop(int argc, char* const* argv,
@@ -97,11 +101,19 @@ static int client_loop(const int argc, char* const* const argv,
         /* Get the local address */
         if (strcmp(argv[i], "-l") == 0 ||
             strcmp(argv[i], "--local") == 0) {
+            /* Create a client socket */
             client_socket = new UDPSocket();
+
+            /* Set options */
+            client_socket->SetOption(SO_RCVBUF, &RCVBUF, sizeof(RCVBUF));
+            client_socket->SetOption(SO_SNDBUF, &SNDBUF, sizeof(SNDBUF));
+
+            /* Bind the local address */
             client_socket->Bind(UDPSocket::GetAddress(argv[i + 1]));
         }
         else if (strcmp(argv[i], "-r") == 0 ||
             strcmp(argv[i], "--remote") == 0) {
+            /* Save the remote address */
             remote_address = UDPSocket::GetAddress(argv[i + 1]);
         }
 
@@ -114,7 +126,7 @@ static int client_loop(const int argc, char* const* const argv,
     /* Run the loop and wait for the UDP packages */
     for (;;) {
         /* Read the request from the client */
-        char* request_buffer = new char[UDPSocket::MTU];
+        char request_buffer[UDPSocket::MTU];
         sockaddr_in client_address;
         long request_size = client_socket->Receive(request_buffer,
                                                    &client_address);
@@ -125,10 +137,10 @@ static int client_loop(const int argc, char* const* const argv,
             continue;
         }
 
-        /* Handle the client (async) */
-        std::thread(handle_client, client_address, remote_address,
-                    client_socket, request_buffer, request_size,
-                    mutate1, mutate2).detach();
+        /* Handle the client */
+        handle_client(client_address, remote_address,
+                      client_socket, request_buffer, request_size,
+                      mutate1, mutate2);
     }
     return 0;
 }
@@ -152,6 +164,10 @@ static void handle_client(const sockaddr_in& client_address,
     } catch (const std::exception&) {
         /* If there is no a server socket yet for that client */
         server_socket = new UDPSocket();
+
+        /* Set options */
+        server_socket->SetOption(SO_RCVBUF, &RCVBUF, sizeof(RCVBUF));
+        server_socket->SetOption(SO_SNDBUF, &SNDBUF, sizeof(SNDBUF));
 
         /* Bind the ephemeral address */
         server_socket->Bind(UDPSocket::EPHEMERAL_ADDRESS);
@@ -184,7 +200,6 @@ static void handle_client(const sockaddr_in& client_address,
     /* Send the data to the server */
     TRACE_LOG("Proxy the request to the server");
     server_socket->Send(request_buffer, request_size);
-    delete[] request_buffer;
 }
 
 static void server_loop(const sockaddr_in& client_address,
@@ -193,7 +208,7 @@ static void server_loop(const sockaddr_in& client_address,
                         long (*const mutate2) (char* const, const short)) {
     for (;;) {
         /* Try to get a reponse */
-        char* response_buffer = new char[UDPSocket::MTU];
+        char response_buffer[UDPSocket::MTU];
         long response_size = server_socket->Receive(response_buffer);
 
         /* If there is an error */
@@ -213,9 +228,9 @@ static void server_loop(const sockaddr_in& client_address,
             break;
         }
 
-        /* Handle the server (async) */
-        std::thread(handle_server, client_address, client_socket,
-                    response_buffer, response_size, mutate2).detach();
+        /* Handle the server */
+        handle_server(client_address, client_socket,
+                      response_buffer, response_size, mutate2);
     }
 }
 
@@ -230,5 +245,4 @@ static void handle_server(const sockaddr_in& client_address,
     /* If we get the response, send it to the client */
     TRACE_LOG("Proxy to response from the server");
     client_socket->Send(response_buffer, response_size, client_address);
-    delete[] response_buffer;
 }

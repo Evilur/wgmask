@@ -9,7 +9,7 @@
 template <typename T>
 class BasePool {
 public:
-    PREVENT_COPY_ALLOW_MOVE(BasePool)
+    PREVENT_COPY_ALLOW_MOVE(BasePool);
 
     BasePool() = default;
 

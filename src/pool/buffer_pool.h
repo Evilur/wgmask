@@ -8,7 +8,11 @@
  */
 class BufferPool final : BasePool<char> {
 public:
+    PREVENT_COPY_ALLOW_MOVE(BufferPool);
+
     explicit BufferPool(int size);
+
+    ~BufferPool() noexcept;
 
     char* Get() noexcept override;
 

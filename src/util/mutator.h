@@ -6,7 +6,7 @@
 
 class Mutator final {
 public:
-    PREVENT_INSTANTIATION(Mutator)
+    PREVENT_INSTANTIATION(Mutator);
 
     static long MaskPacket(char* buffer, short size);
 

@@ -16,7 +16,7 @@
  */
 class UDPSocket {
 public:
-    PREVENT_COPY_ALLOW_MOVE(UDPSocket)
+    PREVENT_COPY_ALLOW_MOVE(UDPSocket);
 
     UDPSocket();
 

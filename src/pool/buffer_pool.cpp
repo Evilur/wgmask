@@ -7,6 +7,13 @@ BufferPool::BufferPool(const int size) {
         _available_buffers.Push(new char[UDPSocket::MTU]);
 }
 
+BufferPool::~BufferPool() noexcept {
+    for (const char* const buffer : _available_buffers)
+        delete[] buffer;
+    for (const char* const buffer : _busy_buffers)
+        delete[] buffer;
+}
+
 char* BufferPool::Get() noexcept {
     /* Get the first available buffer */
     char* result = nullptr;

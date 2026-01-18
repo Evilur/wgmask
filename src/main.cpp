@@ -13,9 +13,6 @@
 static Dictionary<sockaddr_in, UDPSocket*> sockets(8);
 static std::mutex sockets_mutex;
 
-/* Thread pools */
-
-
 /* Buffer pool */
 static BufferPool buffer_pool(8);
 static std::mutex buffers_mutex;

@@ -23,6 +23,13 @@ UDPSocket::UDPSocket() {
         ERROR_LOG("Can't create a socket");
         throw std::exception();
     }
+
+    /* Set packages priority */
+    constexpr int DSCP = (46 << 2);
+    if (setsockopt(_socket_fd, IPPROTO_IP, IP_TOS, &DSCP, sizeof(DSCP))
+        == -1) {
+        ERROR_LOG("Can't set packages priority");
+    }
 }
 
 UDPSocket::~UDPSocket() noexcept {

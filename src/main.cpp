@@ -13,8 +13,8 @@ static Dictionary<sockaddr_in, UDPSocket*> sockets(32);
 static std::mutex sockets_mutex;
 
 /* Otions */
-constexpr int RCVBUF = 16 * 1024 * 1024;
-constexpr int SNDBUF = 16 * 1024 * 1024;
+constexpr int RCVBUF = 32 * 1024 * 1024;
+constexpr int SNDBUF = 32 * 1024 * 1024;
 
 static int print_help();
 

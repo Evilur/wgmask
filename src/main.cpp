@@ -182,10 +182,14 @@ static void handle_client(const sockaddr_in& client_address,
 
         /* If there are no data for 3 mins,
              * exit the thread and close the socket */
-        timeval time {
+#ifdef _WIN64
+        constexpr DWORD time = 3 * 60 * 1000;
+#else
+        constexpr timeval time {
             .tv_sec = (time_t)(60 * 3),
             .tv_usec = 0
         };
+#endif
         server_socket->SetOption(SO_RCVTIMEO, &time, sizeof(time));
 
         /* Put that socket to the dictionary */

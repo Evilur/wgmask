@@ -60,11 +60,7 @@ void UDPSocket::Bind(const sockaddr_in& address) const {
     /* Print the listen address */
 #if LOG_LEVEL <= 2
     sockaddr_in real_address;
-#if _WIN64
-    int real_address_size = sizeof(real_address);
-#else
-    unsigned int real_address_size = sizeof(real_address);
-#endif
+    socklen_t real_address_size = sizeof(real_address);
     getsockname(_socket_fd, (sockaddr*)&real_address, &real_address_size);
     INFO_LOG("Listen on the %s:%hu",
              inet_ntoa(real_address.sin_addr),

@@ -85,7 +85,7 @@ void UDPSocket::Connect(const sockaddr_in& address) const {
 
 long UDPSocket::Receive(char* buffer, sockaddr_in* from)
 const noexcept {
-    /* Send the data */
+    /* Receive the data */
     socklen_t from_len = sizeof(sockaddr_in);
     const long result = recvfrom(_socket_fd, buffer, MTU, 0,
                            (sockaddr*)from, &from_len);
@@ -104,6 +104,7 @@ const noexcept {
 
 long UDPSocket::Receive(char* buffer)
 const noexcept {
+    /* Receive the data */
     const long result = recv(_socket_fd, buffer, MTU, 0);
 
     /* Print the log */

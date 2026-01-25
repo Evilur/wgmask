@@ -91,12 +91,14 @@ const noexcept {
                            (sockaddr*)from, &from_len);
 
     /* Print the log */
+#if LOG_LEVEL == 0
     if (result != -1) {
         TRACE_LOG("Get %lu bytes from %s:%hu",
                   result,
                   inet_ntoa(from->sin_addr),
                   ntohs(from->sin_port));
     }
+#endif
 
     /* Return the result */
     return result;
@@ -133,12 +135,14 @@ void UDPSocket::Send(const char* const buffer, const long buffer_size,
                                 sizeof(sockaddr_in));
 
     /* Print the log */
+#if LOG_LEVEL == 0
     if (result != -1) {
         TRACE_LOG("Send %lu bytes to %s:%hu",
                   result,
                   inet_ntoa(address.sin_addr),
                   ntohs(address.sin_port));
     }
+#endif
 }
 
 void UDPSocket::Send(const char* const buffer, const long buffer_size)

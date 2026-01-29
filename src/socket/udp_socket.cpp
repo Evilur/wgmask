@@ -72,7 +72,7 @@ void UDPSocket::Connect(const sockaddr_in& address) const {
     /* Connect to the address */
     if (connect(_socket_fd, (const sockaddr*)&address, sizeof(address)) ==
         -1) {
-        ERROR_LOG("Can't connect ot the server");
+        ERROR_LOG("Can't connect to the server");
         close(_socket_fd);
         throw std::exception();
     }

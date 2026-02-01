@@ -49,6 +49,6 @@ long Mutator::DemaskPacket(char* const buffer, const short size) {
         for (short i = 92 - 16; i < 92; ++i) buffer[i] ^= MASK[i % MASK_SIZE];
 
     /* Return the current buffer size with junk bytes from the memory */
-    if (type > HANDSHAKE_RESPONSE) return size;
+    if (size <= JUNK_BYTES || type > HANDSHAKE_RESPONSE) return size;
     return size - JUNK_BYTES;
 }

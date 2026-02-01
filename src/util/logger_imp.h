@@ -31,4 +31,5 @@ void Logger::Log(FILE* const stream,
 
     /* Print a new line char */
     fputc('\n', stream);
+    fflush(stream);
 }

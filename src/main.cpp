@@ -181,7 +181,7 @@ static void handle_client(const sockaddr_in& client_address,
                  ntohs(client_address.sin_port));
 
         /* If there are no data for 3 mins,
-             * exit the thread and close the socket */
+         * exit the thread and close the socket */
 #ifdef _WIN64
         constexpr DWORD time = 3 * 60 * 1000;
 #else

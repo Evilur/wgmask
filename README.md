@@ -10,7 +10,7 @@
 
 ## How it works
 Wireguard requests go through such a path:<br>
-`<WireGuard client>` -> `<wgmask server>` -> `<DPI>` -> `<wgmask server>` -> `<WireGuard server>`<br>
+`<WireGuard client>` -> `<wgmask client>` -> `<DPI>` -> `<wgmask server>` -> `<WireGuard server>`<br>
 Wireguard responses go through such a path:<br>
 `<WireGuard server>` -> `<wgmask server>` -> `<DPI>` -> `<wgmask client>` -> `<WireGuard client>`
 
